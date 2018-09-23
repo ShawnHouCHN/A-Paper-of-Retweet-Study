@@ -1,0 +1,401 @@
+---
+title: '\Climate, Twitter Retweet: Is there an Relationship?'
+author: "Kelton, Xiaoshen and Sune"
+date: ''
+output:
+  html_document: default
+  pdf_document:
+    fig_caption: yes
+bibliography: null
+link-citations: yes
+csl: plos.csl
+abstract: This is an abstract.
+---
+
+<!--TO-DO
+- add state FIPS, replace clustering factor in LFE FELM models with State (instead of county) FIPS
+- analysis(counts, emotions for TMAX, PRCP for County and Cell level outcomes)
+- plots(counts, emotions for TMAX, PRCP for County and Cell level outcomes)
+- writeup 
+- tables
+- generate/devise four figures (including county level climate forecast of # of days with TMAX over 30C for next 100 years)
+
+Run from command line to generate RMarkdown:
+
+Rscript -e "rmarkdown::render(".../climate_twitter_volume_Xiaoshen.Rmd")"
+-->
+
+```{r opts, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(fig.path='figures/', warning=F, message=F, fig.retina=NULL, cache=T, cache.lazy=F, autodep=T, echo=F, eval=T)
+
+```
+
+```{r packages server}
+#Install relevant packages
+#install.packages("bit64", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("ggthemes", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("sandwich", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("lmtest", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("ggmap", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("ggplot2", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("Hmisc", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("RColorBrewer", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("grid", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("MASS", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("gplots", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("lfe", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("stargazer", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("lubridate", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("zoo", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("reshape2", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("maptools", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("dplyr", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("plyr", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("data.table", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("caTools", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("ncdf4", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("stringr", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("knitr", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("pander", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("rasterVis", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("GGally", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("matrixStats", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("ggExtra", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("gridExtra", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("viridis", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("devtools", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("cowplot", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+#install.packages("captioner", "/mnt/opt/miniconda2/envs/my-r-env/bin/R/library")
+```
+
+
+```{r packages R studio}
+#Install relevant packages
+#install.packages("bit64")
+#install.packages("ggthemes")
+#install.packages("sandwich")
+#install.packages("lmtest")
+#install.packages("ggmap")
+#install.packages("ggplot2")
+#install.packages("Hmisc")
+#install.packages("RColorBrewer")
+#install.packages("grid")
+#install.packages("MASS")
+#install.packages("gplots")
+#install.packages("lfe")
+#install.packages("stargazer")
+#install.packages("lubridate")
+#install.packages("zoo")
+#install.packages("reshape2")
+#install.packages("maptools")
+#install.packages("dplyr")
+#install.packages("plyr")
+#install.packages("data.table")
+#install.packages("caTools")
+#install.packages("ncdf4")
+#install.packages("stringr")
+#install.packages("knitr")
+#install.packages("pander")
+#install.packages("rasterVis")
+#install.packages("GGally")
+#install.packages("matrixStats")
+#install.packages("ggExtra")
+#install.packages("gridExtra")
+#install.packages("viridis")
+#install.packages("devtools")
+#install.packages("cowplot")
+#install.packages("captioner")
+#install.packages("ordinal")
+
+#Load packages
+library(bit64) # long integers
+library(ggthemes) #themes for plotting
+library(sandwich) #robust se estimator
+library(lmtest) #lm functions
+library(ordinal) #ologit funcitons
+library(memisc) #import stata data
+library(ggmap) #make nice plots with ggplot mapping
+library(ggplot2) #nice plots
+library(Hmisc) #multipurpose package
+library(RColorBrewer) #make nice colors
+library(grid) #plotting package
+library(MASS) #multipurpose package
+library(gplots) #nice plotting
+library(lfe) #run linear fixed effects models
+library(stargazer) #output nice tables
+library(lubridate) #deal with dates
+library(zoo) #deal with dates
+library(reshape2) #powerful reshape package
+library(sp) #general spatial class package
+library(gstat) #geostat package
+library(spacetime) #store data in proper spatial/temporal class
+library(raster) #convert to raster and vice versa
+library(maptools) #plot and modify shapefiles
+library(rgeos) #for use with maptools for shapefiles
+library(rgdal) #for reading in shapefiles
+library(RSAGA) #needed for spatial downscaling
+library(RCurl) #also needed for spatial downscaling
+library(dplyr) #for data frame manipulation functions
+library(plyr) #for additional manipulation functions
+library(data.table) #for data.table functions
+library(foreign) #for reading in .dta files
+library(parallel) #for parallel processing functions
+library(caTools) #functions for fast running mean and sd
+library(stringr) #string tools
+library(knitr) #knitting
+library(pander) #pandering
+library(rasterVis) # plotting rasters
+library(GGally) # for correlation plots
+library(geosphere) # spherical distance
+library(Rcpp) # for C++
+library(RcppArmadillo) # for C++ (and Conley errors)
+library(matrixStats) # matrix calculations
+#library(ggExtra) # for marginal histograms
+#library(gridExtra) # for multiplots
+#library(viridis) # for colors
+#library(Cairo) # pdf device
+#library(gtable) # for gtable filter
+library(devtools)
+#install.packages("cowplot")
+#devtools::install_github("wilkelab/cowplot")
+library(cowplot)
+library(captioner)
+
+#install.packages("stargazer") #Use this to install it, do this only once
+library(stargazer)
+
+library(arm)
+
+# set cores for parallel processing
+#registerDoMC()
+```
+
+```{r functions}
+# functions for grabbing p-values and coefficients from summaries of felm models
+coef <- function(reg, name) {
+    if (round(reg$coefficients[rownames(reg$coefficients)==name, 1], 3) == 0) {
+        format(round(reg$coefficients[rownames(reg$coefficients)==name, 1], 4), scientific=FALSE) 
+    }
+    else round(reg$coefficients[rownames(reg$coefficients)==name, 1], 3)
+}
+pval <- function(reg, name) {
+  if (round(reg$coefficients[rownames(reg$coefficients)==name, 4], 3) >=0.001) 
+  {round(reg$coefficients[rownames(reg$coefficients)==name, 4], 3)} 
+  else paste("< 0.001")
+}
+
+# captioner setting
+fig_num <- captioner()
+tab_num <- captioner(prefix="Table")
+eq_num <- captioner(prefix="Equation")
+sfig_num <- captioner(prefix="Figure S", auto_space=FALSE)
+stab_num <- captioner(prefix="Table S", auto_space=FALSE)
+seq_num <- captioner(prefix="Equation S", auto_space=FALSE)
+
+# bin plot function
+source("binned_plot_function.R")
+```
+
+```{r data}
+getwd()
+#A <- read.csv("US_2016_25KMbinned.csv", header = TRUE, as.is = TRUE)
+#B <- read.csv("US_2015_25KMbinned.csv", header = TRUE, as.is = TRUE)
+#C <- read.csv("US_2014_25KMbinned.csv", header = TRUE, as.is = TRUE)
+#D <- read.csv("US_2013_25KMbinned.csv", header = TRUE, as.is = TRUE)
+
+#A <- read.csv("US_2016_county.csv", header = TRUE, as.is = TRUE)
+#B <- read.csv("US_2015_county.csv", header = TRUE, as.is = TRUE)
+#C <- read.csv("US_2014_county.csv", header = TRUE, as.is = TRUE)
+#D <- read.csv("US_2013_county.csv", header = TRUE, as.is = TRUE)
+
+A <- read.csv("US20_integrated.csv", header = TRUE, as.is = TRUE)
+#B <- read.csv("US_2015_EMO_county.csv", header = TRUE, as.is = TRUE)
+#C <- read.csv("US_2014_EMO_county.csv", header = TRUE, as.is = TRUE)
+#D <- read.csv("US_2013_EMO_county.csv", header = TRUE, as.is = TRUE)
+
+#merge dataframes
+climatweet_df <- A
+summary(climatweet_df)
+```
+
+```{r variables}
+
+#create year and month variable
+climatweet_df$year <- substr(climatweet_df$timestamp,1,4)
+min(climatweet_df$year)
+
+#create cityindexxmonthxyr variable
+cols <- c("idx", "month", "year")
+climatweet_df$cellmnyr <- do.call(paste, c(climatweet_df[cols], sep="-"))
+
+#replace count_daily_urban and count_daily_rural "NA" values with zero 
+climatweet_df$count_tweet[is.na(climatweet_df$count_tweet)] <- 0
+str(climatweet_df$count_tweet)
+
+#only include rows without missing values
+climatweet_df<-na.omit(climatweet_df)
+
+#create variables for ratio_daily_city
+climatweet_df$ratio_daily_cell <- climatweet_df$count_tweet
+climatweet_df$nratio_daily_cell <- climatweet_df$nratio
+
+#create climate variables for each city
+climatweet_df$TMAX_cell <- climatweet_df$TMAX
+
+climatweet_df$TMIN_cell <- climatweet_df$TMIN
+
+climatweet_df$CC_cell <- climatweet_df$CC
+
+climatweet_df$HUM_cell <- climatweet_df$HUM
+
+climatweet_df$PRCP_cell <- climatweet_df$PRCP
+  
+climatweet_df$WIND_cell <- climatweet_df$WIND
+
+##Change the scale of PRCP from MM to CM
+climatweet_df$PRCP_cell <- climatweet_df$PRCP_cell/10
+
+#convert all categorical variables into factors
+climatweet_df$year <- as.factor(climatweet_df$year)
+climatweet_df$calendardate <- as.factor(climatweet_df$timestamp)
+climatweet_df$cellxmn <- as.factor(climatweet_df$cellmnyr)
+climatweet_df$idx <- as.factor(climatweet_df$idx)
+
+#create trange climate variables for PRISM
+climatweet_df$TRANGE_cell <- (climatweet_df$TMAX_cell - climatweet_df$TMIN_cell)
+
+#create climate factor variables, cuts, and set reference categories 
+climatweet_df$CUTTMAX_cell <- cut(climatweet_df$TMAX_cell, breaks=c(-Inf,seq(0, 30, by=5),40)) 
+climatweet_df$CUTTMAX_cell <- relevel(climatweet_df$CUTTMAX_cell, ref="(20,25]")
+
+climatweet_df$CUTTRANGE_cell <- cut(climatweet_df$TRANGE_cell, breaks=c(-Inf,seq(0, 35, by=5),Inf)) 
+climatweet_df$CUTTRANGE_cell <- relevel(climatweet_df$CUTTRANGE_cell, ref="(0,5]")
+
+climatweet_df$CUTTPRCP_cell <- cut(climatweet_df$PRCP_cell, breaks=c(-Inf,seq(0, 10, by=1),Inf)) 
+climatweet_df$CUTTPRCP_cell <- relevel(climatweet_df$CUTTPRCP_cell, ref="(-Inf,0]")
+
+climatweet_df$CUTTWIND_cell <- cut(climatweet_df$WIND_cell, breaks=c(-Inf,seq(0, 25, by=5),Inf)) 
+climatweet_df$CUTTWIND_cell <- relevel(climatweet_df$CUTTWIND_cell, ref="(0,5]")
+
+climatweet_df$CUTTCC_cell <- cut(climatweet_df$CC_cell, breaks=c(-Inf,seq(0, 100, by=20),Inf)) 
+climatweet_df$CUTTCC_cell <- relevel(climatweet_df$CUTTCC_cell, ref="(0,20]")
+
+climatweet_df$CUTTHUM_cell <- cut(climatweet_df$HUM_cell, breaks=c(-Inf,seq(0, 100, by=20),Inf)) 
+climatweet_df$CUTTHUM_cell <- relevel(climatweet_df$CUTTHUM_cell, ref="(40,60]")
+
+#create log transformed outcome
+climatweet_df$ratio_daily_cell_log <- log10(climatweet_df$ratio_daily_cell)
+climatweet_df$nratio_daily_cell_log <- log10(climatweet_df$nratio_daily_cell)
+
+```
+
+
+```{r}
+
+#check levels
+
+levels(climatweet_df$CUTTMAX_cell)
+levels(climatweet_df$CUTTPRCP_cell)
+levels(climatweet_df$CUTTRANGE_cell)
+levels(climatweet_df$CUTTCC_cell)
+levels(climatweet_df$CUTTHUM_cell)
+levels(climatweet_df$CUTTWIND_cell)
+```
+
+
+<!-- some dummy text and code below -->
+
+```{r}
+# captioner
+LABEL_ME <- fig_num(name = "LABEL_ME", caption = "")
+```
+
+```{r}
+str(climatweet_df)
+#summary(climatweet_df$monthly_cell_count_rural)
+#create subset of data with summer months
+#climatweet_df_>10countsmonth <- subset(climatweet_df, (month=="6" | month=="7" | month=="8"))
+```
+
+```{r}
+
+coefplot(flex_t_cell, predictors="CUTTMAX", coefficients=c("(Intercept)", "color.Q"), strict=TRUE)
+```
+
+
+```{r LABEL_ME, dev='jpeg', dpi=300, fig.height=6.5, fig.width=6.5, fig.cap="\\textbf{Spatial and temporal variation} This figure depicts the US grid cells and counties covered by each of our data sources. Panel (a) plots... Panel (b) shows... Panel (c) illustrates ... Panel (d) shows... ."}
+#####################################################
+
+# insert the code to generate your plots here. change the fig.cap above accordingly.
+
+# flex_t_cell model
+flex_t_cell <- felm(formula = climatweet_df$ratio_daily_cell_log ~ CUTTMAX_cell + 
+                                          CUTTPRCP_cell + 
+                                          CUTTRANGE_cell + 
+                                          CUTTCC_cell + 
+                                          CUTTHUM_cell + 
+                                          CUTTWIND_cell 
+                | calendardate + cellxmn 
+                | 0 
+                | idx, 
+                data = climatweet_df, na.action = na.omit) 
+
+summary(flex_t_cell)
+
+vnames = row.names(flex_t_cell$coefficients)
+# plot flex_t_cell model
+flex.plot <- binned.plot(felm.est = flex_t_cell,
+                 plotvar = "CUTTMAX_cell",
+                 breaks = 5,
+                 omit = c(20,25),
+                 linecolor = "blue4",
+                 pointfill = "blue4",
+                 errorfill = "blue4",
+                 xlabel = "Max. Temperature in C",
+                 ylabel = "Ratio"
+                 )
+hist <- axis_canvas(flex.plot, axis = "x") + geom_histogram(data = climatweet_df, aes(x = climatweet_df$TMAX_cell), bins=10, fill='blue4', color='gray60', alpha=0.75, size=0.1)
+flex.plot <- insert_xaxis_grob(flex.plot, hist, position = "bottom", height = grid::unit(0.1, "null"))
+flex.plot <- ggdraw(flex.plot)
+flex.plot
+
+flex.plot <- binned.plot(felm.est = flex_t_cell,
+                 plotvar = "CUTTPRCP_cell",
+                 breaks = 1,
+                 omit = c(0,0),
+                 ylimit = c(0,0.08),
+                 #xlimit = c(0,6),
+                 roundx = 1,
+                 linecolor = "red4",
+                 pointfill = "red4",
+                 errorfill = "red4",
+                 xlabel = "Precipitation in cm",
+                 ylabel = "Ratio"
+                 )
+hist <- axis_canvas(flex.plot, axis = "x") + geom_histogram(data = climatweet_df, aes(x = climatweet_df$PRCP_cell), bins=20, fill='red4', color='gray60', alpha=0.75, size=0.1)
+flex.plot <- insert_xaxis_grob(flex.plot, hist, position = "bottom", height = grid::unit(0.1, "null"))
+flex.plot <- ggdraw(flex.plot)
+flex.plot
+
+
+
+```
+
+To explore if outside weather conditions alter tweeting behavior, we use tweets in the continguous United States between 2013 and 2016 (see `r fig_num("LABEL_ME", display="cite")`a). We include data from counties with less than thirty days of zero tweets in total. 
+
+We combine this twitter data -- marked by day and geolocated to the county level -- with meteorological data from two sources. The PRISM Climate Group, provides gridded (at ~4km) daily maximum and minimum temperatures (in Celsius) as well as daily sumtotal precipitation (in millimeters) for the continental US [@di2008constructing]. The second source, the National Centers for Environmental Prediction (NCEP) Reanalysis II project, provides gridded daily average cloudcover, average relative humidity, and average wind speed over the same period [@kanamitsu2002ncep]. 
+
+Our theoretical relationship of interest is the effect of weather conditions on the log number of tweets in a given county on a given day. We empirically model this relationship as:
+
+```{r}
+fe <- eq_num(name = "fe", caption = "")
+```
+
+$$Y_{ijtm} = f(TMAX_{ijtm}) + g(PRECIP_{ijtm}) + \textbf{Z}\boldsymbol{\eta} + \alpha_i + \mu_t + \nu_{jm} + \epsilon_{ijtm} \ \ \ \ \ (1)$$
+
+In this time-series cross-sectional model, $i$ indexes counties, $j$ indexes states, $t$ indexes calendar days, and $m$ indexes calendar months. Our dependent variable $Y_{ijtm}$ corresponds to the log number of tweets in county $i$ in state $j$ on calendar day $t$ within calendar month $m$. Our independent variables of interest are maximum daily temperature, $TMAX_{ijtm}$, and daily precipitation, $PRECIP_{ijtm}$. We also control for temperature range, percentage cloud cover, relative humidity, and average wind speed, represented via $\textbf{Z}\boldsymbol{\eta}$, as failure to do so may bias our estimates of the effect of maximum temperatures and precipitation on the log number of tweets. We include $\alpha_i$ -- representing county indicator variables -- in `r eq_num("fe", display="cite")`. We also include $\mu_t$ and $\nu_{js}$ in `r eq_num("fe", display="cite")`, representing calendar date and state-by-calendar month indicator variables, respectively to control for other confounds. 
+
+Following the climate econometrics literature [@hsiang2016econometrics;@hsiang2017estimating], our empirical identifying assumption is that the remaining variation in daily maximum temperature and precipitation is as good as random after conditioning on these fixed effects. Hence, the estimated model coefficients from $f(TMAX_{ijtm})$ and $g(PRECIP_{ijtm})$ can be interpreted as the causal effects of maximum temperature and precipitation on the log number of tweets in a county-day.
+
+We estimate `r eq_num("fe", display="cite")` using ordinary least squares and adjust for possible spatial and serial correlation in $\epsilon_{ijtm}$ by employing heteroskedasticity-robust standard errors clustered at the state level [@greene2003econometric]. We omit non-climatic control variables from `r eq_num("fe", display="cite")` because of their potential to generate bias in our parameters of interest [@hsiang2013quantifying;@acharya2016explaining;@hsiang2016econometrics]. 
